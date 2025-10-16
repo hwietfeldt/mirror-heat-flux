@@ -21,8 +21,13 @@ def get_heat_flux(B0, Bw):
     Returns parallel heat flux on wall in MW/m^2
     """
     heat_flux = eta_b * pb_mw * (1 + q_phy / 5) * B0 * Bw
-    heat_flux = heat_flux / (2*np.pi * n25**2 * np.sqrt(eb_100keV))
+    heat_flux = heat_flux / (2*np.pi * n25**2 * eb_100keV)
     return heat_flux
+
+def get_radius_expansion(B0, Bw):
+    a_0 = n25*np.sqrt(eb_100keV)/B0
+    a_w = a_0 * np.sqrt(B0/Bw)
+    return a_w / a_0
 
 def get_min_Bw_from_end_size(B0):
     """
@@ -80,17 +85,26 @@ if __name__=='__main__':
             fontsize=10, colors='red')
     
     # Add grey line where end-plug size-constraint is surpassed
-    plt.plot(B0, min_Bw_end_size_grid[0], linestyle='-', lw=3, c='grey', label=r'$a_w \leq 5a_0$')
-    diff = Bw_grid - min_Bw_end_size_grid
-    plt.contourf(B0_grid, Bw_grid, diff, levels=[diff.min(), 0], colors='white', alpha=1.0)
+    # plt.plot(B0, min_Bw_end_size_grid[0], linestyle='-', lw=3, c='grey', label=r'$a_w \leq 5a_0$')
+    # diff = Bw_grid - min_Bw_end_size_grid
+    # plt.contourf(B0_grid, Bw_grid, diff, levels=[diff.min(), 0], colors='white', alpha=1.0)
 
     # plt.clabel(size_constraint_contour, f'$a_w = {a_expansion_factor_max}a_0',
     #         fontsize=10, colors='grey')
+
+    # Add a contour map of the radial expansion
+    expansion_grid = get_radius_expansion(B0_grid, Bw_grid)
+    expansion_levels = np.arange(3.0, 8.0, 1.0)
+    expansion_contours = plt.contour(B0_grid, Bw_grid, expansion_grid,
+                                     levels = expansion_levels, colors='k', linewidths=1.5, linestyles='solid')
+    plt.clabel(expansion_contours, fmt=lambda v: f"$a_w/a_0$ = {v:.1f}", inline=True, fontsize=12, colors='k')
 
     plt.ylabel('$B_w$ [T]', fontsize=14)
     plt.xlabel('$B_0$ [T]', fontsize=14)
     plt.xlim(B0_grid.min(), B0_grid.max())
     plt.ylim(Bw_grid.min(), Bw_grid.max())
-    plt.legend(fontsize=14)
+    #plt.legend(fontsize=14)
+    plt.title("End Plug Heat Flux\n $E_b$ = 100 keV, $B_m$ = 26 T, $a_{FLR}=a_{abs}$, $P_{nbi}=25$ MW, $Q=0.25$")
+    plt.savefig("heat_flux_map.png")
     plt.show()
 
